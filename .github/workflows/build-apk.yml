@@ -45,15 +45,134 @@ jobs:
             cd "$PUBSPEC_DIR"
           fi
 
-          # 3. Ensure minSdk is 26
-          find android -name "build.gradle*" -exec sed -i "s/minSdkVersion = .*/minSdkVersion = 26/g" {} + 2>/dev/null || true
-          find android -name "build.gradle*" -exec sed -i "s/minSdk = .*/minSdk = 26/g" {} + 2>/dev/null || true
-          find android -name "build.gradle*" -exec sed -i "s/flutter.minSdkVersion/26/g" {} + 2>/dev/null || true
+          mkdir -p android android/app
 
-          # 4. Get dependencies
+          # 3. Modern declarative Gradle configuration (Required by Flutter 3.47+)
+          cat << 'EOF' > android/settings.gradle
+pluginManagement {
+    def flutterSdkPath = {
+        def properties = new Properties()
+        file("local.properties").withInputStream { properties.load(it) }
+        def flutterSdkPath = properties.getProperty("flutter.sdk")
+        assert flutterSdkPath != null : "flutter.sdk not set in local.properties"
+        return flutterSdkPath
+    }()
+
+    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+plugins {
+    id "dev.flutter.flutter-plugin-loader" version "1.0.0"
+    id "com.android.application" version "8.3.2" apply false
+    id "org.jetbrains.kotlin.android" version "1.9.24" apply false
+}
+
+include ":app"
+EOF
+
+          cat << 'EOF' > android/build.gradle
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = "../build"
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(":app")
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
+EOF
+
+          cat << 'EOF' > android/app/build.gradle
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'
+def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
+
+android {
+    namespace "com.stackdialer.app"
+    compileSdk 34
+    ndkVersion flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+
+    defaultConfig {
+        applicationId "com.stackdialer.app"
+        minSdkVersion 26
+        targetSdkVersion 34
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+        multiDexEnabled true
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.debug
+            minifyEnabled false
+            shrinkResources false
+        }
+    }
+}
+
+flutter {
+    source '../..'
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+}
+EOF
+
+          # 4. Fetch dependencies
           flutter pub get
 
-          # 5. Build Release APK
+          # 5. Automatically patch missing namespace or old minSdk in pub cache packages
+          find "$HOME/.pub-cache" -name "build.gradle" -exec grep -L "namespace" {} + 2>/dev/null | while read -r f; do
+            pname=$(basename $(dirname $(dirname "$f")) | tr -cd "[:alnum:]_")
+            sed -i "/android {/a \    namespace \"com.stackdialer.ext.$pname\"" "$f"
+          done || true
+
+          find android "$HOME/.pub-cache" -name "build.gradle*" -exec sed -i "s/minSdkVersion = .*/minSdkVersion = 26/g" {} + 2>/dev/null || true
+          find android "$HOME/.pub-cache" -name "build.gradle*" -exec sed -i "s/minSdkVersion 1[0-9]/minSdkVersion 26/g" {} + 2>/dev/null || true
+
+          # 6. Build Release APK
           flutter build apk --release
 
       - name: Prepare APK Output
