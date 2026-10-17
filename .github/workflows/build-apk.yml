@@ -29,141 +29,29 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Unpack Code and Prepare Workspace
+      - name: Build StackDialer APK
         run: |
-          # 1. If user uploaded a ZIP file directly to GitHub, unzip it!
           ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
           if [ -n "$ZIP_FILE" ]; then
-            echo "Found zip file: $ZIP_FILE. Extracting all project files..."
+            echo "Extracting $ZIP_FILE..."
             unzip -o "$ZIP_FILE"
           fi
 
-          # 2. Locate pubspec.yaml wherever it is
           PUBSPEC_DIR=$(dirname $(find . -name "pubspec.yaml" | head -n 1))
           if [ -n "$PUBSPEC_DIR" ] && [ "$PUBSPEC_DIR" != "." ]; then
-            echo "Found pubspec.yaml in $PUBSPEC_DIR, switching directory..."
             cd "$PUBSPEC_DIR"
           fi
 
-          mkdir -p android android/app
+          mkdir -p android/app
 
-          # 3. Modern declarative Gradle configuration (Required by Flutter 3.47+)
-          cat << 'EOF' > android/settings.gradle
-pluginManagement {
-    def flutterSdkPath = {
-        def properties = new Properties()
-        file("local.properties").withInputStream { properties.load(it) }
-        def flutterSdkPath = properties.getProperty("flutter.sdk")
-        assert flutterSdkPath != null : "flutter.sdk not set in local.properties"
-        return flutterSdkPath
-    }()
+          echo "cGx1Z2luTWFuYWdlbWVudCB7CiAgICBkZWYgZmx1dHRlclNka1BhdGggPSB7CiAgICAgICAgZGVmIHByb3BlcnRpZXMgPSBuZXcgUHJvcGVydGllcygpCiAgICAgICAgZmlsZSgibG9jYWwucHJvcGVydGllcyIpLndpdGhJbnB1dFN0cmVhbSB7IHByb3BlcnRpZXMubG9hZChpdCkgfQogICAgICAgIGRlZiBmbHV0dGVyU2RrUGF0aCA9IHByb3BlcnRpZXMuZ2V0UHJvcGVydHkoImZsdXR0ZXIuc2RrIikKICAgICAgICBhc3NlcnQgZmx1dHRlclNka1BhdGggIT0gbnVsbCA6ICJmbHV0dGVyLnNkayBub3Qgc2V0IGluIGxvY2FsLnByb3BlcnRpZXMiCiAgICAgICAgcmV0dXJuIGZsdXR0ZXJTZGtQYXRoCiAgICB9KCkKCiAgICBpbmNsdWRlQnVpbGQoIiRmbHV0dGVyU2RrUGF0aC9wYWNrYWdlcy9mbHV0dGVyX3Rvb2xzL2dyYWRsZSIpCgogICAgcmVwb3NpdG9yaWVzIHsKICAgICAgICBnb29nbGUoKQogICAgICAgIG1hdmVuQ2VudHJhbCgpCiAgICAgICAgZ3JhZGxlUGx1Z2luUG9ydGFsKCkKICAgIH0KfQoKcGx1Z2lucyB7CiAgICBpZCAiZGV2LmZsdXR0ZXIuZmx1dHRlci1wbHVnaW4tbG9hZGVyIiB2ZXJzaW9uICIxLjAuMCIKICAgIGlkICJjb20uYW5kcm9pZC5hcHBsaWNhdGlvbiIgdmVyc2lvbiAiOC4zLjIiIGFwcGx5IGZhbHNlCiAgICBpZCAib3JnLmpldGJyYWlucy5rb3RsaW4uYW5kcm9pZCIgdmVyc2lvbiAiMS45LjI0IiBhcHBseSBmYWxzZQp9CgppbmNsdWRlICI6YXBwIgo=" | base64 -d > android/settings.gradle
 
-    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+          echo "YWxscHJvamVjdHMgewogICAgcmVwb3NpdG9yaWVzIHsKICAgICAgICBnb29nbGUoKQogICAgICAgIG1hdmVuQ2VudHJhbCgpCiAgICB9Cn0KCnJvb3RQcm9qZWN0LmJ1aWxkRGlyID0gIi4uL2J1aWxkIgpzdWJwcm9qZWN0cyB7CiAgICBwcm9qZWN0LmJ1aWxkRGlyID0gIiR7cm9vdFByb2plY3QuYnVpbGREaXJ9LyR7cHJvamVjdC5uYW1lfSIKfQpzdWJwcm9qZWN0cyB7CiAgICBwcm9qZWN0LmV2YWx1YXRpb25EZXBlbmRzT24oIjphcHAiKQp9Cgp0YXNrcy5yZWdpc3RlcigiY2xlYW4iLCBEZWxldGUpIHsKICAgIGRlbGV0ZSByb290UHJvamVjdC5idWlsZERpcgp9Cg==" | base64 -d > android/build.gradle
 
-    repositories {
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-    }
-}
+          echo "cGx1Z2lucyB7CiAgICBpZCAiY29tLmFuZHJvaWQuYXBwbGljYXRpb24iCiAgICBpZCAia290bGluLWFuZHJvaWQiCiAgICBpZCAiZGV2LmZsdXR0ZXIuZmx1dHRlci1ncmFkbGUtcGx1Z2luIgp9CgpkZWYgbG9jYWxQcm9wZXJ0aWVzID0gbmV3IFByb3BlcnRpZXMoKQpkZWYgbG9jYWxQcm9wZXJ0aWVzRmlsZSA9IHJvb3RQcm9qZWN0LmZpbGUoImxvY2FsLnByb3BlcnRpZXMiKQppZiAobG9jYWxQcm9wZXJ0aWVzRmlsZS5leGlzdHMoKSkgewogICAgbG9jYWxQcm9wZXJ0aWVzRmlsZS53aXRoUmVhZGVyKCJVVEYtOCIpIHsgcmVhZGVyIC0+CiAgICAgICAgbG9jYWxQcm9wZXJ0aWVzLmxvYWQocmVhZGVyKQogICAgfQp9CgpkZWYgZmx1dHRlclZlcnNpb25Db2RlID0gbG9jYWxQcm9wZXJ0aWVzLmdldFByb3BlcnR5KCJmbHV0dGVyLnZlcnNpb25Db2RlIikgPzogIjEiCmRlZiBmbHV0dGVyVmVyc2lvbk5hbWUgPSBsb2NhbFByb3BlcnRpZXMuZ2V0UHJvcGVydHkoImZsdXR0ZXIudmVyc2lvbk5hbWUiKSA/OiAiMS4wIgoKYW5kcm9pZCB7CiAgICBuYW1lc3BhY2UgImNvbS5zdGFja2RpYWxlci5hcHAiCiAgICBjb21waWxlU2RrIDM0CiAgICBuZGtWZXJzaW9uIGZsdXR0ZXIubmRrVmVyc2lvbgoKICAgIGNvbXBpbGVPcHRpb25zIHsKICAgICAgICBzb3VyY2VDb21wYXRpYmlsaXR5IEphdmFWZXJzaW9uLlZFUlNJT05fMTcKICAgICAgICB0YXJnZXRDb21wYXRpYmlsaXR5IEphdmFWZXJzaW9uLlZFUlNJT05fMTcKICAgIH0KCiAgICBrb3RsaW5PcHRpb25zIHsKICAgICAgICBqdm1UYXJnZXQgPSAiMTciCiAgICB9CgogICAgc291cmNlU2V0cyB7CiAgICAgICAgbWFpbi5qYXZhLnNyY0RpcnMgKz0gInNyYy9tYWluL2tvdGxpbiIKICAgIH0KCiAgICBkZWZhdWx0Q29uZmlnIHsKICAgICAgICBhcHBsaWNhdGlvbklkICJjb20uc3RhY2tkaWFsZXIuYXBwIgogICAgICAgIG1pblNka1ZlcnNpb24gMjYKICAgICAgICB0YXJnZXRTZGtWZXJzaW9uIDM0CiAgICAgICAgdmVyc2lvbkNvZGUgZmx1dHRlclZlcnNpb25Db2RlLnRvSW50ZWdlcigpCiAgICAgICAgdmVyc2lvbk5hbWUgZmx1dHRlclZlcnNpb25OYW1lCiAgICAgICAgbXVsdGlEZXhFbmFibGVkIHRydWUKICAgIH0KCiAgICBidWlsZFR5cGVzIHsKICAgICAgICByZWxlYXNlIHsKICAgICAgICAgICAgc2lnbmluZ0NvbmZpZyBzaWduaW5nQ29uZmlncy5kZWJ1ZwogICAgICAgICAgICBtaW5pZnlFbmFibGVkIGZhbHNlCiAgICAgICAgICAgIHNocmlua1Jlc291cmNlcyBmYWxzZQogICAgICAgIH0KICAgIH0KfQoKZmx1dHRlciB7CiAgICBzb3VyY2UgIi4uLy4uIgp9CgpkZXBlbmRlbmNpZXMgewogICAgaW1wbGVtZW50YXRpb24gIm9yZy5qZXRicmFpbnMua290bGluOmtvdGxpbi1zdGRsaWItamRrOCIKfQo=" | base64 -d > android/app/build.gradle
 
-plugins {
-    id "dev.flutter.flutter-plugin-loader" version "1.0.0"
-    id "com.android.application" version "8.3.2" apply false
-    id "org.jetbrains.kotlin.android" version "1.9.24" apply false
-}
-
-include ":app"
-EOF
-
-          cat << 'EOF' > android/build.gradle
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-
-rootProject.buildDir = "../build"
-subprojects {
-    project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
-subprojects {
-    project.evaluationDependsOn(":app")
-}
-
-tasks.register("clean", Delete) {
-    delete rootProject.buildDir
-}
-EOF
-
-          cat << 'EOF' > android/app/build.gradle
-plugins {
-    id "com.android.application"
-    id "kotlin-android"
-    id "dev.flutter.flutter-gradle-plugin"
-}
-
-def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
-        localProperties.load(reader)
-    }
-}
-
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'
-def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
-
-android {
-    namespace "com.stackdialer.app"
-    compileSdk 34
-    ndkVersion flutter.ndkVersion
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = '17'
-    }
-
-    sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
-    }
-
-    defaultConfig {
-        applicationId "com.stackdialer.app"
-        minSdkVersion 26
-        targetSdkVersion 34
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
-        multiDexEnabled true
-    }
-
-    buildTypes {
-        release {
-            signingConfig signingConfigs.debug
-            minifyEnabled false
-            shrinkResources false
-        }
-    }
-}
-
-flutter {
-    source '../..'
-}
-
-dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-}
-EOF
-
-          # 4. Fetch dependencies
           flutter pub get
 
-          # 5. Automatically patch missing namespace or old minSdk in pub cache packages
           find "$HOME/.pub-cache" -name "build.gradle" -exec grep -L "namespace" {} + 2>/dev/null | while read -r f; do
             pname=$(basename $(dirname $(dirname "$f")) | tr -cd "[:alnum:]_")
             sed -i "/android {/a \    namespace \"com.stackdialer.ext.$pname\"" "$f"
@@ -172,29 +60,17 @@ EOF
           find android "$HOME/.pub-cache" -name "build.gradle*" -exec sed -i "s/minSdkVersion = .*/minSdkVersion = 26/g" {} + 2>/dev/null || true
           find android "$HOME/.pub-cache" -name "build.gradle*" -exec sed -i "s/minSdkVersion 1[0-9]/minSdkVersion 26/g" {} + 2>/dev/null || true
 
-          # 6. Build Release APK
           flutter build apk --release
 
-      - name: Prepare APK Output
-        run: |
           mkdir -p release_out
           APK_FILE=$(find . -name "app-release.apk" -o -name "*release*.apk" | head -n 1)
-          if [ -n "$APK_FILE" ]; then
-            cp "$APK_FILE" release_out/StackDialer.apk
-            echo "APK successfully created:"
-            ls -lh release_out/StackDialer.apk
-          else
-            echo "Error: APK not found!"
-            find . -name "*.apk"
-            exit 1
-          fi
+          cp "$APK_FILE" release_out/StackDialer.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: StackDialer-Release-APK
           path: release_out/StackDialer.apk
-          if-no-files-found: error
 
       - name: Publish Direct APK to GitHub Releases
         uses: softprops/action-gh-release@v2
